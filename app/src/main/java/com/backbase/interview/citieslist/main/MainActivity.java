@@ -1,5 +1,6 @@
 package com.backbase.interview.citieslist.main;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.recyclerview.extensions.ListAdapter;
@@ -12,15 +13,21 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
+import com.backbase.interview.citieslist.PersistSortedCitiesService;
 import com.backbase.interview.citieslist.R;
 import com.backbase.interview.citieslist.models.entities.City;
 import com.backbase.interview.citieslist.models.entities.Coordination;
 import com.backbase.interview.citieslist.ui.activities.BaseActivity;
+import com.backbase.interview.citieslist.utils.CityManager;
+import com.backbase.interview.citieslist.utils.Constants;
+import com.backbase.interview.citieslist.utils.EndlessRecyclerViewScrollListener;
+import com.backbase.interview.citieslist.utils.FileUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +44,7 @@ public class MainActivity extends BaseActivity {
 
   private RecyclerView mRecyclerView;
   private ProgressBar mLoadingProgressBar;
+  private EndlessRecyclerViewScrollListener mEndlessRecyclerViewScrollListener;
 
   @Override protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -52,11 +60,19 @@ public class MainActivity extends BaseActivity {
     mLoadingProgressBar = findViewById(R.id.main_activity_pb);
 
     mRecyclerView = findViewById(R.id.main_activity_rv);
+    LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
     mRecyclerView.setLayoutManager(
-        new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        linearLayoutManager);
     mRecyclerView.setAdapter(new CitiesAdapter());
     mRecyclerView.setHasFixedSize(true);
     mRecyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
+
+    mEndlessRecyclerViewScrollListener = new EndlessRecyclerViewScrollListener(linearLayoutManager) {
+      @Override public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
+        Timber.d("loadMore(), page:[%s], totalItemsCount:[%s]", page, totalItemsCount);
+      }
+    };
+    mRecyclerView.addOnScrollListener(mEndlessRecyclerViewScrollListener);
   }
 
   @Override public boolean onCreateOptionsMenu(Menu menu) {
@@ -133,7 +149,7 @@ public class MainActivity extends BaseActivity {
       return citiesList;
     }
 
-    private List<City> typeTokenParse(JsonReader jsonReader) throws IOException {
+    private List<City> typeTokenParse(JsonReader jsonReader, boolean isSorted) throws IOException {
       final List<City> citiesList = new LinkedList<>();
 
       jsonReader.beginArray();
@@ -148,11 +164,24 @@ public class MainActivity extends BaseActivity {
         jsonReader.nextName();
         final String name = jsonReader.nextString();
 
-        jsonReader.nextName();
-        jsonReader.nextInt();
 
-        jsonReader.nextName();
-        jsonReader.beginObject();
+        String maybeId = jsonReader.nextName();
+
+        //Timber.d("name:[%s], toSt:[%s], maybeId:[%s]", jsonReader.peek().name(), jsonReader.peek().toString(), maybeId);
+
+        if (maybeId.equals("_id")) {
+          jsonReader.nextInt();
+
+          jsonReader.nextName();
+          jsonReader.beginObject();
+        } else {
+          jsonReader.beginObject();
+        }
+
+
+
+        //jsonReader.nextName();
+        //jsonReader.beginObject();
 
         jsonReader.nextName();
         final double longitude = jsonReader.nextDouble();
@@ -162,11 +191,18 @@ public class MainActivity extends BaseActivity {
         jsonReader.endObject();
 
         citiesList.add(City.from(name, country, Coordination.from(latitude, longitude)));
+
+        if (isSorted && citiesList.size() >= Constants.PAGE_SIZE) {
+          break;
+        }
       }
       Timber.w("typeTokenParse() #%s items in duration:[%sms]", citiesList.size(),
           TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - processStartTime));
 
-      jsonReader.endArray();
+      if (!isSorted) {
+        jsonReader.endArray();
+      }
+      //jsonReader.endObject();
       jsonReader.close();
 
       return citiesList;
@@ -186,30 +222,8 @@ public class MainActivity extends BaseActivity {
       Timber.w("sortAsc() took:[%sms]",
           TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - sortStartTime));
     }
-    @Override protected List<City> doInBackground(Void... voids) {
-      Timber.w("doInBackground");
-
-      final List<City> citiesList = new LinkedList<>();
-
-      try {
-        if (mContextWeakReference.get() == null) return null;
-        final InputStream inputStream = mContextWeakReference.get().getAssets().open("cities.json");
-        final JsonReader jsonReader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
-
-        //citiesList.addAll(deserializeParse(jsonReader));
-        citiesList.addAll(typeTokenParse(jsonReader));
-        sortAsc(citiesList);
-        saveSortedCitiesList(citiesList);
-
-
-      } catch (Exception ex) {
-        Timber.e(ex, "while parse");
-        //ex.printStackTrace();
-      }
-      return citiesList;
-    }
-
     private void saveSortedCitiesList(List<City> citiesList) {
+      Timber.d("saveSortedCitiesList()");
 
       JsonWriter writer;
 
@@ -218,8 +232,7 @@ public class MainActivity extends BaseActivity {
 
       try {
         if(mContextWeakReference.get() == null) return;
-        File sortedCitiesFile =
-            new File(mContextWeakReference.get().getExternalCacheDir(), "sorted_cities.json");
+        File sortedCitiesFile = FileUtils.getSortedCitiesFile(mContextWeakReference.get());
 
         if (sortedCitiesFile.exists() && sortedCitiesFile.length() > 0) {
           return;
@@ -250,6 +263,50 @@ public class MainActivity extends BaseActivity {
         System.err.print(e.getMessage());
       }
     }
+
+    @Override protected List<City> doInBackground(Void... voids) {
+      Timber.w("doInBackground");
+
+      final List<City> citiesList = new LinkedList<>();
+
+      try {
+        if (mContextWeakReference.get() == null) return null;
+
+        final File sortedCitiesFile = FileUtils.getSortedCitiesFile(mContextWeakReference.get());
+        if (sortedCitiesFile.exists() && sortedCitiesFile.length() > 0) {
+          final InputStream inputStream = new FileInputStream(sortedCitiesFile);
+          final JsonReader jsonReader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
+          citiesList.addAll(typeTokenParse(jsonReader, true));
+        } else {
+          final InputStream inputStream = mContextWeakReference.get().getAssets().open(FileUtils.RAW_CITIES_FILE_NAME);
+          final JsonReader jsonReader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
+
+          //citiesList.addAll(deserializeParse(jsonReader));
+          citiesList.addAll(typeTokenParse(jsonReader, false));
+          sortAsc(citiesList);
+
+          CityManager.getInstance().citiesList.clear();
+          CityManager.getInstance().citiesList.addAll(citiesList);
+          mContextWeakReference.get()
+              .startService(
+                  new Intent(mContextWeakReference.get(), PersistSortedCitiesService.class));
+
+          //saveSortedCitiesList(citiesList);
+
+        }
+
+
+      } catch (Exception ex) {
+        Timber.e(ex, "while parse");
+        //ex.printStackTrace();
+      }
+
+      if (citiesList.size() >= Constants.PAGE_SIZE) {
+        return citiesList.subList(0, Constants.PAGE_SIZE);
+      }
+      return citiesList;
+    }
+
 
     @Override protected void onPostExecute(List<City> cities) {
       Timber.w("onPostExecute");

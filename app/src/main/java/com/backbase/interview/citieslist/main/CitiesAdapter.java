@@ -88,7 +88,7 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.ViewHolder
     }
 
     void bind(City city) {
-      mNameTextView.setText(city.name);
+      mNameTextView.setText(city.name + " - " + getAdapterPosition());
       mCountryTextView.setText(city.country);
     }
   }
