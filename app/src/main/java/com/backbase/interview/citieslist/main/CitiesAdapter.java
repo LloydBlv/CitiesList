@@ -12,6 +12,7 @@ import com.backbase.interview.citieslist.R;
 import com.backbase.interview.citieslist.models.entities.City;
 import java.util.LinkedList;
 import java.util.List;
+import timber.log.Timber;
 
 public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.ViewHolder> implements
     Filterable {
@@ -35,6 +36,7 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.ViewHolder
   }
 
   public void addAll(final List<City> cities) {
+    Timber.d("addAll(%s)", cities.size());
     final int lastIndex = getItemCount();
     data.addAll(cities);
     notifyItemRangeInserted(lastIndex, cities.size());
@@ -45,6 +47,7 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.ViewHolder
 
 
   public void filter(String text) {
+    Timber.d("filter:[%s], data.size:[%s], dataCopy.size:[%s]", text, data.size(), dataCopy.size());
     data.clear();
     if(text.isEmpty()){
       data.addAll(dataCopy);
@@ -75,6 +78,28 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.ViewHolder
     };
   }
 
+  public void setSearchResult(List<City> cities) {
+    Timber.d("setSearchResult(%s)", cities.size());
+    data.clear();
+    data.addAll(cities);
+    notifyDataSetChanged();
+  }
+
+  public void clearSearchList() {
+    Timber.d("clearSearchList");
+    data.clear();
+    notifyDataSetChanged();
+  }
+
+  public void showCitiesList() {
+    Timber.d("showCitiesList");
+
+    data.clear();
+    data.addAll(dataCopy);
+    notifyDataSetChanged();
+
+  }
+
   static class ViewHolder extends RecyclerView.ViewHolder{
 
     final TextView mNameTextView;
@@ -89,7 +114,7 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.ViewHolder
 
     void bind(City city) {
       mNameTextView.setText(city.name + " - " + getAdapterPosition());
-      mCountryTextView.setText(city.country);
+      mCountryTextView.setText(city.country + " - [" + city.coord.lat + "," + city.coord.lon + "]");
     }
   }
 }
