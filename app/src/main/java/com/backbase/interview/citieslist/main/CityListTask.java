@@ -1,20 +1,15 @@
 package com.backbase.interview.citieslist.main;
 
-import android.content.Intent;
 import android.os.AsyncTask;
-import com.backbase.interview.citieslist.PersistSortedCitiesService;
 import com.backbase.interview.citieslist.models.entities.City;
 import com.backbase.interview.citieslist.models.entities.Coordination;
 import com.backbase.interview.citieslist.utils.CityManager;
 import com.backbase.interview.citieslist.utils.Constants;
-import com.backbase.interview.citieslist.utils.FileUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -27,17 +22,17 @@ import java.util.concurrent.TimeUnit;
 import timber.log.Timber;
 
 public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
-  private final WeakReference<MainActivity> mContextWeakReference;
+  private final WeakReference<MainViewContract> mViewReference;
 
-  CityListTask(final MainActivity context) {
-    this.mContextWeakReference = new WeakReference<>(context);
+  CityListTask(final MainViewContract mainViewContract) {
+    this.mViewReference = new WeakReference<>(mainViewContract);
   }
 
   @Override protected void onPreExecute() {
     Timber.w("onPreExecute");
     super.onPreExecute();
-    if (mContextWeakReference.get() != null) {
-      mContextWeakReference.get().showLoading();
+    if (mViewReference.get() != null) {
+      mViewReference.get().showLoading();
     }
   }
 
@@ -154,15 +149,18 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
     final List<City> citiesList = new LinkedList<>();
 
     try {
-      if (mContextWeakReference.get() == null) return null;
+      if (mViewReference.get() == null) return null;
 
-      final File sortedCitiesFile = FileUtils.getSortedCitiesFile(mContextWeakReference.get());
+      final File sortedCitiesFile = mViewReference.get().getSortedCitiesFile();
+      //final File sortedCitiesFile = FileUtils.getSortedCitiesFile(mViewReference.get());
       if (sortedCitiesFile.exists() && sortedCitiesFile.length() > 0) {
         final InputStream inputStream = new FileInputStream(sortedCitiesFile);
         final JsonReader jsonReader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
         citiesList.addAll(typeTokenParse(jsonReader, true));
       } else {
-        final InputStream inputStream = mContextWeakReference.get().getAssets().open(FileUtils.RAW_CITIES_FILE_NAME);
+        final InputStream inputStream = mViewReference.get().getCityInputStream();
+        //final InputStream inputStream = mViewReference.get().getAssets().open(FileUtils.RAW_CITIES_FILE_NAME);
+        //final InputStream inputStream = mViewReference.get().getAssets().open(FileUtils.RAW_CITIES_FILE_NAME);
         final JsonReader jsonReader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
 
         //citiesList.addAll(deserializeParse(jsonReader));
@@ -171,9 +169,10 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
 
         CityManager.getInstance().citiesList.clear();
         CityManager.getInstance().citiesList.addAll(citiesList);
-        mContextWeakReference.get()
-            .startService(
-                new Intent(mContextWeakReference.get(), PersistSortedCitiesService.class));
+        mViewReference.get().startPersistService();
+        //mViewReference.get()
+        //    .startService(
+        //        new Intent(mViewReference.get(), PersistSortedCitiesService.class));
 
         //saveSortedCitiesList(citiesList);
 
@@ -197,9 +196,9 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
 
     super.onPostExecute(cities);
 
-    if (mContextWeakReference.get() != null) {
-      mContextWeakReference.get().hideLoading();
-      mContextWeakReference.get().bindRecyclerViewData(cities);
+    if (mViewReference.get() != null) {
+      mViewReference.get().hideLoading();
+      mViewReference.get().bindRecyclerViewData(cities);
     }
   }
 }

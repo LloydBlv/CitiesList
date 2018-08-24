@@ -5,7 +5,6 @@ import com.backbase.interview.citieslist.models.entities.City;
 import com.backbase.interview.citieslist.models.entities.Coordination;
 import com.backbase.interview.citieslist.utils.CityManager;
 import com.backbase.interview.citieslist.utils.Constants;
-import com.backbase.interview.citieslist.utils.FileUtils;
 import com.google.gson.stream.JsonReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,18 +12,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import timber.log.Timber;
 
 public  class CitySearchTask extends AsyncTask<String, Void, List<City>> {
-  private final WeakReference<MainActivity> mContextWeakReference;
+  private final WeakReference<MainViewContract> mViewReference;
 
-  CitySearchTask(MainActivity mainActivity) {
-    mContextWeakReference = new WeakReference<>(mainActivity);
+  CitySearchTask(MainViewContract mainViewContract) {
+    mViewReference = new WeakReference<>(mainViewContract);
   }
 
   @Override protected List<City> doInBackground(String... strings) {
@@ -38,9 +35,10 @@ public  class CitySearchTask extends AsyncTask<String, Void, List<City>> {
     }
 
     try {
-      if (mContextWeakReference.get() == null) return null;
+      if (mViewReference.get() == null) return null;
 
-      final File sortedCitiesFile = FileUtils.getSortedCitiesFile(mContextWeakReference.get());
+      final File sortedCitiesFile = mViewReference.get().getSortedCitiesFile();
+      //final File sortedCitiesFile = FileUtils.getSortedCitiesFile(mViewReference.get());
 
       if (!CityManager.getInstance().citiesList.isEmpty()) {
         Timber.d("CityManager size:[%s]]", CityManager.getInstance().citiesList.size());
@@ -164,17 +162,17 @@ public  class CitySearchTask extends AsyncTask<String, Void, List<City>> {
   @Override protected void onPreExecute() {
     super.onPreExecute();
 
-    if (mContextWeakReference.get() != null) {
-      mContextWeakReference.get().showSearchProgress();
+    if (mViewReference.get() != null) {
+      mViewReference.get().showSearchProgress();
     }
   }
 
   @Override protected void onPostExecute(List<City> cities) {
     super.onPostExecute(cities);
     Timber.d("onPostExecute(), size:[%s]", cities.size());
-    if (mContextWeakReference.get() != null) {
-      mContextWeakReference.get().setSearchResultData(cities);
-      mContextWeakReference.get().hideSearchProgress();
+    if (mViewReference.get() != null) {
+      mViewReference.get().setSearchResultData(cities);
+      mViewReference.get().hideSearchProgress();
     }
   }
 }

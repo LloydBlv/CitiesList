@@ -17,6 +17,20 @@ import timber.log.Timber;
 public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.ViewHolder> implements
     Filterable {
 
+  final OnListItemClickListener mOnListItemClickListener;
+
+  public CitiesAdapter(OnListItemClickListener mOnListItemClickListener) {
+    this.mOnListItemClickListener = mOnListItemClickListener;
+  }
+
+  public City getItem(int clickedPos) {
+    return data.get(clickedPos);
+  }
+
+  interface OnListItemClickListener{
+    void onListItemClicked(final View itemView);
+  }
+
   private final List<City> data = new LinkedList<>();
   private final List<City> dataCopy = new LinkedList<>();
 
@@ -25,7 +39,7 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.ViewHolder
         LayoutInflater.from(parent.getContext()).inflate(R.layout.item_city, parent, false));
     viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
       @Override public void onClick(View v) {
-
+        mOnListItemClickListener.onListItemClicked(v);
       }
     });
     return viewHolder;

@@ -5,7 +5,6 @@ import com.backbase.interview.citieslist.models.entities.City;
 import com.backbase.interview.citieslist.models.entities.Coordination;
 import com.backbase.interview.citieslist.utils.CityManager;
 import com.backbase.interview.citieslist.utils.Constants;
-import com.backbase.interview.citieslist.utils.FileUtils;
 import com.google.gson.stream.JsonReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,10 +20,10 @@ import java.util.concurrent.TimeUnit;
 import timber.log.Timber;
 
 public  class CityLoadMoreTask extends AsyncTask<Integer, Void, List<City>> {
-  private final WeakReference<MainActivity> mContextWeakReference;
+  private final WeakReference<MainViewContract> mViewReference;
 
-  CityLoadMoreTask(MainActivity mainActivity) {
-    mContextWeakReference = new WeakReference<>(mainActivity);
+  CityLoadMoreTask(MainViewContract mainViewContract) {
+    mViewReference = new WeakReference<>(mainViewContract);
   }
 
   private void sortAsc(final List<City> citiesList) {
@@ -49,9 +48,10 @@ public  class CityLoadMoreTask extends AsyncTask<Integer, Void, List<City>> {
     final List<City> citiesList = new LinkedList<>();
 
     try {
-      if (mContextWeakReference.get() == null) return null;
+      if (mViewReference.get() == null) return null;
 
-      final File sortedCitiesFile = FileUtils.getSortedCitiesFile(mContextWeakReference.get());
+      final File sortedCitiesFile = mViewReference.get().getSortedCitiesFile();
+      //final File sortedCitiesFile = FileUtils.getSortedCitiesFile(mViewReference.get());
 
       if (!CityManager.getInstance().citiesList.isEmpty()) {
         Timber.d("CityManager size:[%s], subIndex:[%s -> %s]", CityManager.getInstance().citiesList.size(),
@@ -157,8 +157,8 @@ public  class CityLoadMoreTask extends AsyncTask<Integer, Void, List<City>> {
   @Override protected void onPostExecute(List<City> cities) {
     super.onPostExecute(cities);
     Timber.d("onPostExecute(), size:[%s]", cities.size());
-    if (mContextWeakReference.get() != null) {
-      mContextWeakReference.get().bindRecyclerViewData(cities);
+    if (mViewReference.get() != null) {
+      mViewReference.get().bindRecyclerViewData(cities);
     }
   }
 }

@@ -19,6 +19,7 @@ import static org.junit.Assert.*;
     // Context of the app under test.
     Context appContext = InstrumentationRegistry.getTargetContext();
 
+
     assertEquals("com.backbase.interview.citieslist", appContext.getPackageName());
   }
 }

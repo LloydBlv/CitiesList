@@ -23,6 +23,9 @@
 
 
     <service android:name=".PersistSortedCitiesService" android:exported="false"/>
+
+    <meta-data android:name="com.google.android.geo.API_KEY"
+        android:value="AIzaSyA6mylkTloD825fiN-dM-0Dz81PvEFOHj8" />
   </application>
 
 </manifest>
