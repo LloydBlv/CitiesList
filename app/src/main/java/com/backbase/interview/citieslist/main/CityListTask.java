@@ -19,7 +19,6 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import timber.log.Timber;
 
 public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
   private final WeakReference<MainViewContract> mViewReference;
@@ -29,7 +28,6 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
   }
 
   @Override protected void onPreExecute() {
-    Timber.w("onPreExecute");
     super.onPreExecute();
     if (mViewReference.get() != null) {
       mViewReference.get().showLoading();
@@ -43,7 +41,6 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
 
     if (System.currentTimeMillis() - lastNotifiedProgress > 5_000) {
       lastNotifiedProgress = System.currentTimeMillis();
-      Timber.d("progress:[%s:%s]", values[0], (values[0] / 209557f) * 100);
     }
   }
 
@@ -56,8 +53,6 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
       final City currentCity = gson.fromJson(jsonReader, City.class);
       citiesList.add(currentCity);
     }
-    Timber.w("deserializeParse() #%s items in duration:[%sms]", citiesList.size(),
-        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - processStartTime));
 
     jsonReader.endArray();
     jsonReader.close();
@@ -116,9 +111,6 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
         break;
       }
     }
-    Timber.w("typeTokenParse() #%s items in duration:[%sms]", citiesList.size(),
-        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - processStartTime));
-
     if (!isSorted) {
       jsonReader.endArray();
     }
@@ -139,13 +131,9 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
       }
     });
 
-    Timber.w("sortAsc() took:[%sms]",
-        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - sortStartTime));
   }
 
   @Override protected List<City> doInBackground(Void... voids) {
-    Timber.w("doInBackground");
-
     final List<City> citiesList = new LinkedList<>();
 
     try {
@@ -180,7 +168,6 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
 
 
     } catch (Exception ex) {
-      Timber.e(ex, "while parse");
       //ex.printStackTrace();
     }
 
@@ -192,7 +179,6 @@ public  class CityListTask extends AsyncTask<Void, Integer, List<City>> {
 
 
   @Override protected void onPostExecute(List<City> cities) {
-    Timber.w("onPostExecute");
 
     super.onPostExecute(cities);
 

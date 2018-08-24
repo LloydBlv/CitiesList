@@ -9,7 +9,6 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import timber.log.Timber;
 
 public class MapsFragment extends SupportMapFragment implements OnMapReadyCallback {
 
@@ -44,9 +43,6 @@ public class MapsFragment extends SupportMapFragment implements OnMapReadyCallba
   }
 
   @Override public void onMapReady(GoogleMap googleMap) {
-    Timber.d("onMapReady");
-
-
     LatLng currentCity =
         new LatLng(getArguments().getDouble(ARG_LATITUDE), getArguments().getDouble(ARG_LONGITUDE));
 

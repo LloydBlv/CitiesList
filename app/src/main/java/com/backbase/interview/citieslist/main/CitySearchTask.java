@@ -15,7 +15,6 @@ import java.lang.ref.WeakReference;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import timber.log.Timber;
 
 public  class CitySearchTask extends AsyncTask<String, Void, List<City>> {
   private final WeakReference<MainViewContract> mViewReference;
@@ -26,7 +25,6 @@ public  class CitySearchTask extends AsyncTask<String, Void, List<City>> {
 
   @Override protected List<City> doInBackground(String... strings) {
     final String  query = strings[0];
-    Timber.w("doInBackground(), query:[%s]", query);
 
     final List<City> citiesList = new LinkedList<>();
 
@@ -41,7 +39,6 @@ public  class CitySearchTask extends AsyncTask<String, Void, List<City>> {
       //final File sortedCitiesFile = FileUtils.getSortedCitiesFile(mViewReference.get());
 
       if (!CityManager.getInstance().citiesList.isEmpty()) {
-        Timber.d("CityManager size:[%s]]", CityManager.getInstance().citiesList.size());
 
         for (City city : CityManager.getInstance().citiesList) {
           if (city.name.startsWith(query)) {
@@ -49,20 +46,15 @@ public  class CitySearchTask extends AsyncTask<String, Void, List<City>> {
           }
         }
 
-        Timber.d("City manager query:[%s]", citiesList.size());
       } else if (sortedCitiesFile.exists() && sortedCitiesFile.length() > 0) {
-        Timber.d("reading from sorted json file");
         final InputStream inputStream = new FileInputStream(sortedCitiesFile);
         final JsonReader jsonReader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
         citiesList.addAll(typeTokenParse(jsonReader, query));
       } else {
-        Timber.d("none");
       }
 
 
     } catch (Exception ex) {
-      Timber.e(ex, "while parse");
-      //ex.printStackTrace();
     }
 
     if (citiesList.size() >= Constants.PAGE_SIZE) {
@@ -133,8 +125,6 @@ public  class CitySearchTask extends AsyncTask<String, Void, List<City>> {
         break;
       }
     }
-    Timber.w("CitySearchTask.typeTokenParse() #%s items in duration:[%sms]", citiesList.size(),
-        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - processStartTime));
 
     //jsonReader.endObject();
     jsonReader.close();
@@ -169,7 +159,6 @@ public  class CitySearchTask extends AsyncTask<String, Void, List<City>> {
 
   @Override protected void onPostExecute(List<City> cities) {
     super.onPostExecute(cities);
-    Timber.d("onPostExecute(), size:[%s]", cities.size());
     if (mViewReference.get() != null) {
       mViewReference.get().setSearchResultData(cities);
       mViewReference.get().hideSearchProgress();

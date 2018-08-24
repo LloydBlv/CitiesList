@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import timber.log.Timber;
 
 public class MainFragment extends Fragment implements MainViewContract {
 
@@ -117,7 +116,6 @@ public class MainFragment extends Fragment implements MainViewContract {
     mEndlessRecyclerViewScrollListener =
         new EndlessRecyclerViewScrollListener(linearLayoutManager) {
           @Override public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
-            Timber.d("loadMore(), page:[%s], totalItemsCount:[%s], isSearchViewOpen:[%s]", page, totalItemsCount, isSearchViewOpen);
             if(isSearchViewOpen) return;
             mCityLoadMoreTask = new CityLoadMoreTask(MainFragment.this);
             mCityLoadMoreTask.execute(page);
@@ -137,7 +135,6 @@ public class MainFragment extends Fragment implements MainViewContract {
     mSearchProgressBar = searchView.findViewById(R.id.search_progressbar);
     searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
       @Override public boolean onQueryTextSubmit(String query) {
-        Timber.w("onQueryTextSubmit:[%s]", query);
         return true;
       }
 
@@ -152,8 +149,6 @@ public class MainFragment extends Fragment implements MainViewContract {
           return true;
         }
 
-        Timber.w("onQueryTextChange:[%s]", newText);
-        //((CitiesAdapter) (mRecyclerView.getAdapter())).filter(newText);
         mCitiesAdapter.clearSearchList();
 
         if (mCitySearchTask != null) {
@@ -169,15 +164,12 @@ public class MainFragment extends Fragment implements MainViewContract {
 
     mSearchMenuItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
       @Override public boolean onMenuItemActionExpand(MenuItem item) {
-        Timber.d("onMenuItemActionExpand");
         isSearchViewOpen = true;
         mCitiesAdapter.clearSearchList();
         return true;
       }
 
       @Override public boolean onMenuItemActionCollapse(MenuItem item) {
-        Timber.d("onMenuItemActionCollapse");
-
         isSearchViewOpen = false;
 
         mCitiesAdapter.showCitiesList();

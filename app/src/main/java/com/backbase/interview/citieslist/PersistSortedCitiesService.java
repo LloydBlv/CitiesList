@@ -11,8 +11,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import timber.log.Timber;
 
 public class PersistSortedCitiesService extends IntentService {
   public PersistSortedCitiesService() {
@@ -20,12 +18,8 @@ public class PersistSortedCitiesService extends IntentService {
   }
 
   @Override protected void onHandleIntent(@Nullable Intent intent) {
-    Timber.d("saveSortedCitiesList()");
-
     JsonWriter writer;
 
-
-    final long writeStartTime = System.nanoTime();
 
     try {
       File sortedCitiesFile = FileUtils.getSortedCitiesFile(this);
@@ -50,8 +44,6 @@ public class PersistSortedCitiesService extends IntentService {
         writer.endObject();
       }
 
-      Timber.w("saveSortedCitiesList() #%s items took [%sms] in:[%s]", citiesList.size(),
-          TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - writeStartTime), sortedCitiesFile.getAbsolutePath());
       writer.endArray();
       writer.close();
 
